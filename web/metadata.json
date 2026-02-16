@@ -1,0 +1,8 @@
+{
+  "name": "Qayta Tug'ilish",
+  "description": "A gamified fitness transformation ecosystem featuring a portfolio, user mobile app, and admin dashboard. Focused on weight loss, nutrition, and motivation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

@@ -1,0 +1,196 @@
+╔══════════════════════════════════════════════════════════════╗
+║  QAYTA TUG'ILISH - O'RNATISH VA ISHGA TUSHIRISH YO'RIQNOMASI  ║
+╚══════════════════════════════════════════════════════════════╝
+
+📦 FAYLLAR RO'YXATI:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ASOSIY FAYLLAR:
+  ✓ App.tsx                  - Asosiy app
+  ✓ types.ts                 - TypeScript types
+  ✓ constants.ts             - Mock data
+  ✓ package.json             - Dependencies
+  ✓ tsconfig.json            - TypeScript config
+  ✓ vite.config.ts           - Vite config
+  ✓ index.html               - HTML shablon
+  ✓ index.tsx                - Entry point
+
+YANGI KOMPONENTLAR (V2.0):
+  ✓ RecipeManager.tsx        - Retseptlar kutubxonasi
+  ✓ ShoppingList.tsx         - Xarid ro'yxati
+  ✓ ProgressPhotos.tsx       - Progress timeline
+  ✓ WorkoutLibrary.tsx       - Mashqlar
+  ✓ Marketplace.tsx          - Do'kon
+  ✓ RecipeEditor.tsx         - Admin: retsept
+  ✓ WorkoutEditor.tsx        - Admin: mashq
+  ✓ ProductEditor.tsx        - Admin: mahsulot
+
+MAVJUD KOMPONENTLAR:
+  ✓ UI.tsx                   - Button, Card
+  ✓ Landing.tsx              - Landing page
+  ✓ Auth.tsx                 - Login/Register
+  ✓ UserApp.tsx              - User app
+  ✓ AdminPanel.tsx           - Admin panel
+
+YO'RIQNOMALAR:
+  ✓ README.md                - Tezkor boshlash
+  ✓ BLUEPRINT.md             - Cursor uchun to'liq guide
+  ✓ UPDATED_UserApp.tsx      - UserApp yangilash yo'riqnomasi
+  ✓ INSTALLATION_GUIDE.txt   - Bu fayl
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 1. HOZIRGI WEB VERSIYANI ISHGA TUSHIRISH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TALABLAR:
+  • Node.js 18+ o'rnatilgan bo'lishi kerak
+  • npm yoki yarn
+
+QADAMLAR:
+
+1. Proyekt papkasiga o'ting:
+   cd qayta-tugilish
+
+2. Dependencies o'rnatish:
+   npm install
+
+3. Development server ishga tushirish:
+   npm run dev
+
+4. Brauzerda ochish:
+   http://localhost:5173
+
+5. Login qilish:
+   User: username: user, password: user
+   Admin: username: admin, password: admin
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 2. MOBILE ILOVAGA O'TKAZISH (CURSOR)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BOSQICHLAR:
+
+1. BLUEPRINT.md faylini o'qing
+   - Bu faylda to'liq yo'riqnoma bor
+   - React Native migration strategy
+   - Firebase integration
+   - Native features guide
+
+2. Cursor AI da proyektni oching:
+   - File > Open Folder > proyekt papkasini tanlang
+
+3. Cursor ga quyidagi promptni bering:
+
+   "Read BLUEPRINT.md file and convert this React web app 
+   to React Native using Expo. Follow all guidelines in the 
+   BLUEPRINT including:
+   - Setup project structure
+   - Convert all components to React Native
+   - Implement navigation
+   - Add native features (camera, notifications)
+   - Setup Firebase backend
+   Start with project initialization."
+
+4. Cursor step-by-step ishlaydi:
+   ✓ Expo proyekt yaratadi
+   ✓ Dependencies o'rnatadi
+   ✓ Komponentlarni convert qiladi
+   ✓ Navigation setup qiladi
+   ✓ Backend integration qiladi
+
+5. Test qiling:
+   npm start
+   (Expo Go ilovasida ochiladi)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 3. USERAPP.TSX NI YANGILASH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+UPDATED_UserApp.tsx faylida quyidagilar bor:
+
+1. Yangi navigation buttonlar qo'shish
+2. Yangi komponentlarni import qilish
+3. Tab content qo'shish
+
+QANDAY QILISH:
+- UPDATED_UserApp.tsx ni oching
+- Ko'rsatilgan o'zgarishlarni UserApp.tsx ga qo'shing
+- Yoki Cursor ga bering:
+  "Update UserApp.tsx according to UPDATED_UserApp.tsx guide"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 4. YANGI FUNKSIYALAR (V2.0)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+USER UCHUN:
+✓ Recipe Manager      - 100+ retseptlar, search, filter
+✓ Shopping List       - Automatic, custom items, checkbox
+✓ Progress Photos     - Timeline, before/after, measurements
+✓ Workout Library     - Video instruction, muscle groups
+✓ Marketplace         - E-books, courses, payment ready
+
+ADMIN UCHUN:
+✓ Recipe Editor       - Full CRUD operations
+✓ Workout Editor      - Create exercises with videos
+✓ Product Editor      - Add products to marketplace
+✓ Template System     - Create 30-day plans
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 5. CURSOR PROMPTLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BACKEND SETUP:
+"Setup Firebase for this app with:
+- Authentication (phone + password)
+- Firestore database
+- Storage for images
+- Cloud functions for payments"
+
+KOMPONENT CONVERT:
+"Convert RecipeManager.tsx to React Native preserving 
+all functionality and styling"
+
+NATIVE FEATURES:
+"Add camera integration using expo-image-picker for 
+progress photo upload"
+
+"Implement push notifications using expo-notifications 
+for daily meal reminders"
+
+PAYMENT:
+"Integrate Click.uz payment gateway in Marketplace component"
+
+OPTIMIZATION:
+"Optimize image loading using expo-image and add caching"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📞 6. YORDAM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Savol-javoblar:
+  Q: Dependencies o'rnatilmayabdi?
+  A: Node.js versiyasini tekshiring: node --version
+     18+ bo'lishi kerak. npm cache clean --force
+
+  Q: Cursor prompt ishlamayapti?
+  A: BLUEPRINT.md ni to'liq o'qitganingizga ishonch hosil qiling
+     Cmd/Ctrl+K tugmasini bosib prompt yozing
+
+  Q: Mobile ilovada xatolik?
+  A: expo-cli global o'rnatilgan bo'lishi kerak:
+     npm install -g expo-cli
+
+CONTACT:
+  📱 +998 91 448 97 97
+  📸 @farruxradjabov94
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ TAYYOR! Omad tilayman! 🚀
+
