@@ -1,27 +1,48 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from './UI';
-import { UserRole } from '../types';
+import { UserRole, User } from '../types';
 
-export const Auth = ({ onLogin, onBack }: { onLogin: (role: UserRole) => void, onBack: () => void }) => {
+interface AuthProps {
+  onLogin: (role: UserRole, user?: User) => void;
+  onBack: () => void;
+  users: User[];
+}
+
+export const Auth = ({ onLogin, onBack, users }: AuthProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === 'admin' && password === 'admin') {
-      onLogin(UserRole.ADMIN);
-    } else if (username === 'user' && password === 'user') {
-      onLogin(UserRole.USER);
-    } else {
+    setError('');
+
+    // Creator (super admin)
+    if (username === 'creator' && password === 'xiaomicoder') {
+      onLogin(UserRole.CREATOR);
+      return;
+    }
+
+    // Oddiy foydalanuvchi yoki admin
+    const foundUser = users.find(u => u.username === username && u.password === password);
+    if (!foundUser) {
       setError("Noto'g'ri login yoki parol");
+      return;
+    }
+    if (foundUser.isBlocked) {
+      setError("Sizning hisobingiz bloklangan. Admin bilan bog'laning.");
+      return;
+    }
+    if (foundUser.role === UserRole.ADMIN) {
+      onLogin(UserRole.ADMIN, foundUser);
+    } else {
+      onLogin(UserRole.USER, foundUser);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black/90 px-4 relative">
-       {/* Background Decoration */}
        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-[-1]">
             <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px]"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[100px]"></div>
@@ -64,11 +85,6 @@ export const Auth = ({ onLogin, onBack }: { onLogin: (role: UserRole) => void, o
 
         <div className="mt-6 text-center">
             <button onClick={onBack} className="text-sm text-gray-500 hover:text-white underline">Orqaga qaytish</button>
-        </div>
-        
-        <div className="mt-8 pt-6 border-t border-gray-800 text-center text-xs text-gray-600">
-           <p>Demo Login: user / user</p>
-           <p>Demo Admin: admin / admin</p>
         </div>
       </motion.div>
     </div>

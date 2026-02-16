@@ -2,6 +2,7 @@ export enum UserRole {
   GUEST = 'guest',
   USER = 'user',
   ADMIN = 'admin',
+  CREATOR = 'creator',
 }
 
 export interface User {
@@ -20,8 +21,10 @@ export interface User {
   phone: string;
   weightHistory: { date: string; weight: number }[];
   messages: { id: string; text: string; sender: 'user' | 'admin'; time: string }[];
-  username?: string; // Login uchun
-  password?: string; // Parol uchun (faqat demo maqsadda saqlaymiz)
+  username?: string;
+  password?: string;
+  role?: UserRole;
+  isBlocked?: boolean;
 }
 
 // Yangi Shablon turi

@@ -12,15 +12,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 const App = () => {
   const [currentView, setCurrentView] = useState<'landing' | 'login' | 'app' | 'admin'>('landing');
   const [userRole, setUserRole] = useState<UserRole>(UserRole.GUEST);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [allUsers, setAllUsers] = useState<User[]>([
+    { ...MOCK_USER, role: UserRole.USER, isBlocked: false }
+  ]);
 
-  const handleLogin = (role: UserRole) => {
+  const handleLogin = (role: UserRole, user?: User) => {
     setUserRole(role);
-    if (role === UserRole.ADMIN) setCurrentView('admin');
+    if (user) setCurrentUser(user);
+    if (role === UserRole.CREATOR || role === UserRole.ADMIN) setCurrentView('admin');
     if (role === UserRole.USER) setCurrentView('app');
   };
 
   const handleLogout = () => {
     setUserRole(UserRole.GUEST);
+    setCurrentUser(null);
     setCurrentView('landing');
   };
 
@@ -36,7 +42,6 @@ const App = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Simple Navbar Overlay */}
             <nav className="absolute top-0 w-full z-50 p-6 flex justify-between items-center container mx-auto">
               <div className="font-heading font-bold text-2xl tracking-tighter">QAYTA<span className="text-primary">TUG'ILISH</span></div>
               <Button 
@@ -67,21 +72,26 @@ const App = () => {
         {/* LOGIN PAGE */}
         {currentView === 'login' && (
           <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-             <Auth onLogin={handleLogin} onBack={() => setCurrentView('landing')} />
+             <Auth onLogin={handleLogin} onBack={() => setCurrentView('landing')} users={allUsers} />
           </motion.div>
         )}
 
-        {/* USER APP (MOBILE WEB) */}
-        {currentView === 'app' && (
+        {/* USER APP */}
+        {currentView === 'app' && currentUser && (
            <motion.div key="app" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-             <UserApp user={MOCK_USER} onLogout={handleLogout} />
+             <UserApp user={currentUser} onLogout={handleLogout} />
            </motion.div>
         )}
 
-        {/* ADMIN PANEL */}
+        {/* ADMIN / CREATOR PANEL */}
         {currentView === 'admin' && (
             <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <AdminPanel onLogout={handleLogout} />
+              <AdminPanel
+                onLogout={handleLogout}
+                isCreator={userRole === UserRole.CREATOR}
+                allUsers={allUsers}
+                onUsersChange={setAllUsers}
+              />
             </motion.div>
         )}
 

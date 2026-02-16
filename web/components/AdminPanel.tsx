@@ -1,21 +1,35 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Users, Video, Activity, LogOut, Plus, Calendar, ChevronRight, Save, Trash2, Eye, X, Dumbbell, Utensils, Clock, Image as ImageIcon, Film, Send, Link2 } from 'lucide-react';
+import { Users, Video, Activity, LogOut, Plus, Calendar, ChevronRight, Save, Trash2, Eye, X, Dumbbell, Utensils, Clock, Image as ImageIcon, Film, Send, Link2, Shield, ShieldOff, Ban, CheckCircle, Crown } from 'lucide-react';
 import { Button, Card } from './UI';
-import { User, PlanTemplate, DailyPlan, Task } from '../types';
+import { User, PlanTemplate, DailyPlan, Task, UserRole } from '../types';
 import { MOCK_TEMPLATES, MOCK_USER } from '../constants';
 
-export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
+interface AdminPanelProps {
+    onLogout: () => void;
+    isCreator?: boolean;
+    allUsers?: User[];
+    onUsersChange?: (users: User[]) => void;
+}
+
+export const AdminPanel = ({ onLogout, isCreator = false, allUsers, onUsersChange }: AdminPanelProps) => {
     const [activeTab, setActiveTab] = useState<'users' | 'analytics' | 'content'>('users');
-    const [users, setUsers] = useState<User[]>([MOCK_USER]); 
+    const [users, setUsersLocal] = useState<User[]>(allUsers || [MOCK_USER]);
     const [templates, setTemplates] = useState<PlanTemplate[]>(MOCK_TEMPLATES);
     
+    const setUsers = (newUsers: User[] | ((prev: User[]) => User[])) => {
+        const resolved = typeof newUsers === 'function' ? newUsers(users) : newUsers;
+        setUsersLocal(resolved);
+        if (onUsersChange) onUsersChange(resolved);
+    };
+
     // UI States
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [isCreatingUser, setIsCreatingUser] = useState(false);
     const [userToAssignPlan, setUserToAssignPlan] = useState<User | null>(null);
     const [assignTemplateId, setAssignTemplateId] = useState('');
+    const [roleModalUser, setRoleModalUser] = useState<User | null>(null);
     
     // TEMPLATE EDITOR STATE
     const [isEditingTemplate, setIsEditingTemplate] = useState(false);
@@ -38,7 +52,7 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
             username: newUserForm.username,
             password: newUserForm.password,
             category: template.name,
-            plan: JSON.parse(JSON.stringify(template.days)), // Deep copy
+            plan: JSON.parse(JSON.stringify(template.days)),
             startDate: new Date().toISOString().split('T')[0],
             currentDay: 1,
             streak: 0,
@@ -48,7 +62,9 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
             goalWeight: 0,
             age: 0,
             weightHistory: [],
-            messages: []
+            messages: [],
+            role: UserRole.USER,
+            isBlocked: false,
         };
         
         setUsers([...users, newUser]);
@@ -75,6 +91,24 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
         if (selectedUser?.id === userToAssignPlan.id) setSelectedUser(null);
     };
 
+    const handleToggleBlock = (userId: string) => {
+        setUsers(users.map(u =>
+            u.id === userId ? { ...u, isBlocked: !u.isBlocked } : u
+        ));
+    };
+
+    const handleChangeRole = (userId: string, newRole: UserRole) => {
+        setUsers(users.map(u =>
+            u.id === userId ? { ...u, role: newRole } : u
+        ));
+        setRoleModalUser(null);
+    };
+
+    const handleDeleteUser = (userId: string) => {
+        if (!confirm("Bu foydalanuvchini o'chirmoqchimisiz?")) return;
+        setUsers(users.filter(u => u.id !== userId));
+    };
+
     const initNewTemplate = () => {
         const days: DailyPlan[] = Array.from({ length: 30 }, (_, i) => ({
             day: i + 1,
@@ -97,7 +131,6 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
     const handleSaveTemplate = () => {
         if (!currentTemplate || !currentTemplate.name) return;
         
-        // Update if exists, else add
         const exists = templates.find(t => t.id === currentTemplate.id);
         if (exists) {
             setTemplates(templates.map(t => t.id === currentTemplate.id ? currentTemplate : t));
@@ -132,11 +165,34 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
         setCurrentTemplate({ ...currentTemplate, days: updatedDays });
     };
 
+    const getRoleBadge = (user: User) => {
+        if (user.role === UserRole.ADMIN) {
+            return <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1"><Shield size={10} /> ADMIN</span>;
+        }
+        return <span className="bg-gray-700/50 text-gray-400 px-2 py-0.5 rounded-full text-[10px] font-bold">USER</span>;
+    };
+
+    const getStatusBadge = (user: User) => {
+        if (user.isBlocked) {
+            return <span className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1"><Ban size={10} /> Bloklangan</span>;
+        }
+        return <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1"><CheckCircle size={10} /> Faol</span>;
+    };
+
     return (
         <div className="min-h-screen bg-[#121212] flex font-sans">
             {/* Sidebar */}
             <aside className="w-20 md:w-64 bg-[#1E1E1E] border-r border-gray-800 flex flex-col p-4 fixed md:relative z-20 h-full">
-                <div className="mb-8 font-heading font-bold text-2xl text-primary hidden md:block">ADMIN</div>
+                <div className="mb-8 hidden md:block">
+                    <div className="font-heading font-bold text-2xl text-primary">
+                        {isCreator ? 'CREATOR' : 'ADMIN'}
+                    </div>
+                    {isCreator && (
+                        <div className="flex items-center gap-1 mt-1 text-xs text-yellow-500">
+                            <Crown size={12} /> Super Admin
+                        </div>
+                    )}
+                </div>
                 <nav className="flex-1 space-y-2">
                     <SidebarItem icon={<Users />} label="Foydalanuvchilar" active={activeTab === 'users'} onClick={() => setActiveTab('users')} />
                     <SidebarItem icon={<Video />} label="Kontent & Rejalar" active={activeTab === 'content'} onClick={() => setActiveTab('content')} />
@@ -160,33 +216,59 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                                 <Plus size={18} /> Yangi User
                             </Button>
                         </div>
+
+                        {isCreator && (
+                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 text-left">
+                                <p className="text-sm text-yellow-300 flex items-center gap-2">
+                                    <Crown size={16} className="text-yellow-500 shrink-0" />
+                                    <span>
+                                        <strong>Creator rejimi:</strong> Siz barcha foydalanuvchilarni boshqarishingiz, <strong>rollarni o'zgartirishingiz</strong> (admin/user), va hisoblarni <strong>bloklashingiz</strong> mumkin.
+                                    </span>
+                                </p>
+                            </div>
+                        )}
+
                         <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 text-left">
                             <p className="text-sm text-gray-300">
                                 <strong className="text-primary">Reja biriktirish:</strong> Yangi user yaratganda shablon tanlang — reja avtomatik birikadi. Mavjud user ga <strong>«Reja biriktirish»</strong> tugmasi orqali boshqa shablon tanlab biriktirishingiz mumkin.
                             </p>
                         </div>
+
+                        {users.length === 0 ? (
+                            <div className="text-center py-20 text-gray-500">
+                                <Users className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                                <h3 className="text-xl font-bold">Hali foydalanuvchilar yo'q</h3>
+                                <p className="mt-2">Yuqoridagi "Yangi User" tugmasini bosing</p>
+                            </div>
+                        ) : (
                         <div className="bg-[#1E1E1E] rounded-2xl border border-gray-800 overflow-hidden">
                             <table className="w-full text-left text-gray-300">
                                 <thead className="bg-[#2A2A2A] text-xs uppercase text-gray-400">
                                     <tr>
                                         <th className="p-4">Foydalanuvchi</th>
                                         <th className="p-4 hidden md:table-cell">Reja (Shablon)</th>
-                                        <th className="p-4 hidden md:table-cell">Progress</th>
+                                        <th className="p-4 hidden md:table-cell">Holat</th>
                                         <th className="p-4">Kun</th>
                                         <th className="p-4">Amallar</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-800">
                                     {users.map(u => (
-                                        <tr key={u.id} className="hover:bg-[#252525] transition-colors">
+                                        <tr key={u.id} className={`hover:bg-[#252525] transition-colors ${u.isBlocked ? 'opacity-50' : ''}`}>
                                             <td className="p-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${u.isBlocked ? 'bg-red-500/20 text-red-400' : 'bg-primary/20 text-primary'}`}>
                                                         {u.name.charAt(0)}
                                                     </div>
                                                     <div>
-                                                        <div className="font-bold text-white">{u.name}</div>
-                                                        <div className="text-xs text-gray-500">{u.username}</div>
+                                                        <div className="font-bold text-white flex items-center gap-2">
+                                                            {u.name}
+                                                            {getRoleBadge(u)}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 flex items-center gap-2">
+                                                            {u.username}
+                                                            {getStatusBadge(u)}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -204,17 +286,46 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                                                 <div className="flex flex-wrap gap-2">
                                                     <button 
                                                         onClick={() => { setUserToAssignPlan(u); setAssignTemplateId(u.category ? templates.find(t => t.name === u.category)?.id || '' : ''); }}
-                                                        className="px-3 py-1.5 bg-primary/20 hover:bg-primary text-primary hover:text-black rounded-lg text-xs font-bold transition-all flex items-center gap-2"
-                                                        title="30 kunlik rejani biriktirish yoki o'zgartirish"
+                                                        className="px-3 py-1.5 bg-primary/20 hover:bg-primary text-primary hover:text-black rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                                                        title="30 kunlik rejani biriktirish"
                                                     >
-                                                        <Link2 size={14} /> Reja biriktirish
+                                                        <Link2 size={14} /> Reja
                                                     </button>
                                                     <button 
                                                         onClick={() => setSelectedUser(u)}
-                                                        className="px-3 py-1.5 bg-gray-800 hover:bg-white hover:text-black rounded-lg text-xs font-bold transition-all flex items-center gap-2"
+                                                        className="px-3 py-1.5 bg-gray-800 hover:bg-white hover:text-black rounded-lg text-xs font-bold transition-all flex items-center gap-1"
                                                     >
-                                                        <Eye size={14} /> Monitoring
+                                                        <Eye size={14} /> Ko'rish
                                                     </button>
+                                                    {isCreator && (
+                                                        <>
+                                                            <button 
+                                                                onClick={() => setRoleModalUser(u)}
+                                                                className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500 text-blue-400 hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                                                                title="Rol o'zgartirish"
+                                                            >
+                                                                <Shield size={14} /> Rol
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleToggleBlock(u.id)}
+                                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                                                                    u.isBlocked 
+                                                                        ? 'bg-green-500/20 hover:bg-green-500 text-green-400 hover:text-white'
+                                                                        : 'bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white'
+                                                                }`}
+                                                                title={u.isBlocked ? "Blokdan chiqarish" : "Bloklash"}
+                                                            >
+                                                                {u.isBlocked ? <><CheckCircle size={14} /> Ochish</> : <><Ban size={14} /> Blok</>}
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleDeleteUser(u.id)}
+                                                                className="px-3 py-1.5 bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                                                                title="O'chirish"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -222,6 +333,7 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                                 </tbody>
                             </table>
                         </div>
+                        )}
                     </div>
                 )}
 
@@ -274,6 +386,77 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                 )}
             </main>
 
+            {/* --- MODAL: ROL O'ZGARTIRISH (Creator only) --- */}
+            <AnimatePresence>
+                {roleModalUser && isCreator && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-[#1E1E1E] rounded-3xl w-full max-w-md border border-gray-700 p-6"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <Shield className="text-blue-400" /> Rol boshqarish
+                                </h3>
+                                <button onClick={() => setRoleModalUser(null)}><X className="text-gray-400" /></button>
+                            </div>
+
+                            <div className="text-center mb-6">
+                                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-2xl font-bold text-primary mx-auto mb-3">
+                                    {roleModalUser.name.charAt(0)}
+                                </div>
+                                <h4 className="text-lg font-bold text-white">{roleModalUser.name}</h4>
+                                <p className="text-sm text-gray-400">@{roleModalUser.username}</p>
+                                <div className="mt-2 flex items-center justify-center gap-2">
+                                    <span className="text-xs text-gray-500">Hozirgi rol:</span>
+                                    {getRoleBadge(roleModalUser)}
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 mb-6">
+                                <p className="text-xs text-gray-500 uppercase font-bold">Yangi rolni tanlang:</p>
+                                
+                                <button
+                                    onClick={() => handleChangeRole(roleModalUser.id, UserRole.USER)}
+                                    className={`w-full p-4 rounded-xl border transition-all text-left flex items-center gap-3 ${
+                                        roleModalUser.role !== UserRole.ADMIN
+                                            ? 'border-primary bg-primary/10 text-white'
+                                            : 'border-gray-700 bg-[#2A2A2A] text-gray-300 hover:border-gray-500'
+                                    }`}
+                                >
+                                    <Users size={20} className="text-gray-400" />
+                                    <div>
+                                        <div className="font-bold">Oddiy foydalanuvchi (User)</div>
+                                        <div className="text-xs text-gray-500">Faqat o'z rejasini ko'radi</div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => handleChangeRole(roleModalUser.id, UserRole.ADMIN)}
+                                    className={`w-full p-4 rounded-xl border transition-all text-left flex items-center gap-3 ${
+                                        roleModalUser.role === UserRole.ADMIN
+                                            ? 'border-blue-500 bg-blue-500/10 text-white'
+                                            : 'border-gray-700 bg-[#2A2A2A] text-gray-300 hover:border-gray-500'
+                                    }`}
+                                >
+                                    <Shield size={20} className="text-blue-400" />
+                                    <div>
+                                        <div className="font-bold">Admin</div>
+                                        <div className="text-xs text-gray-500">Userlarni ko'rishi va rejalarni boshqarishi mumkin</div>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <Button onClick={() => setRoleModalUser(null)} variant="outline" className="w-full">
+                                Yopish
+                            </Button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             {/* --- MODAL: REJA BIRIKTIRISH (mavjud user) --- */}
             <AnimatePresence>
                 {userToAssignPlan && (
@@ -323,7 +506,6 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                             exit={{ scale: 0.9, opacity: 0 }}
                             className="bg-[#1E1E1E] rounded-3xl w-full max-w-lg border border-gray-700 p-6 md:p-8"
                         >
-                            {/* ... (Existing User Form Code) ... */}
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-2xl font-bold text-white">Yangi Foydalanuvchi</h3>
                                 <button onClick={() => setIsCreatingUser(false)}><X className="text-gray-400" /></button>
@@ -372,7 +554,6 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                 {selectedUser && (
                     <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col md:flex-row overflow-hidden">
                         
-                        {/* User Header Sidebar (Mobile: Top, Desktop: Left) */}
                         <div className="w-full md:w-80 bg-[#1E1E1E] border-b md:border-r border-gray-800 p-6 flex flex-col gap-6 overflow-y-auto">
                             <button onClick={() => setSelectedUser(null)} className="absolute top-4 right-4 md:hidden"><X className="text-gray-400" /></button>
                             <div className="text-center">
@@ -381,16 +562,46 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                                 </div>
                                 <h2 className="text-2xl font-bold text-white">{selectedUser.name}</h2>
                                 <p className="text-gray-400">{selectedUser.category}</p>
+                                <div className="flex items-center justify-center gap-2 mt-2">
+                                    {getRoleBadge(selectedUser)}
+                                    {getStatusBadge(selectedUser)}
+                                </div>
                                 <Button
                                     onClick={() => { setUserToAssignPlan(selectedUser); setAssignTemplateId(templates.find(t => t.name === selectedUser.category)?.id || ''); }}
                                     variant="outline"
-                                    className="w-full mt-2 flex items-center justify-center gap-2"
+                                    className="w-full mt-3 flex items-center justify-center gap-2"
                                 >
                                     <Link2 size={16} /> Reja biriktirish / o'zgartirish
                                 </Button>
+                                {isCreator && (
+                                    <div className="flex gap-2 mt-2">
+                                        <Button
+                                            onClick={() => setRoleModalUser(selectedUser)}
+                                            variant="outline"
+                                            className="flex-1 flex items-center justify-center gap-2 text-blue-400 border-blue-500/30"
+                                        >
+                                            <Shield size={16} /> Rol
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleToggleBlock(selectedUser.id)}
+                                            variant="outline"
+                                            className={`flex-1 flex items-center justify-center gap-2 ${
+                                                selectedUser.isBlocked 
+                                                    ? 'text-green-400 border-green-500/30' 
+                                                    : 'text-red-400 border-red-500/30'
+                                            }`}
+                                        >
+                                            {selectedUser.isBlocked ? <><CheckCircle size={16} /> Ochish</> : <><Ban size={16} /> Blok</>}
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                             
                             <div className="space-y-4 bg-[#2A2A2A] p-4 rounded-2xl">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-400">Login:</span>
+                                    <span className="text-white font-mono">{selectedUser.username}</span>
+                                </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-400">Joriy Vazn:</span>
                                     <span className="text-white font-bold">{selectedUser.weight} kg</span>
@@ -410,7 +621,6 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                             </Button>
                         </div>
 
-                        {/* Monitoring Grid */}
                         <div className="flex-1 p-4 md:p-8 overflow-y-auto bg-black">
                              <div className="max-w-5xl mx-auto">
                                  <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
@@ -419,7 +629,6 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
 
                                  <div className="grid grid-cols-5 md:grid-cols-7 lg:grid-cols-10 gap-3">
                                      {selectedUser.plan.map((day) => {
-                                         // Status Logic
                                          const hasMeals = day.meals.length > 0;
                                          const mealsDone = day.meals.every(m => m.completed);
                                          const exercisesDone = day.exercises.every(e => e.completed);
@@ -439,7 +648,6 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                                              bgClass = "bg-primary/20 border-primary text-primary ring-2 ring-primary/50";
                                              textClass = "text-primary";
                                          } else {
-                                             // Past and not done
                                              bgClass = "bg-red-500/10 border-red-500/50 text-red-500";
                                              textClass = "text-red-500";
                                          }
@@ -459,13 +667,12 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                                      })}
                                  </div>
 
-                                 {/* Recent Uploads Section */}
                                  <h3 className="text-xl font-bold text-white mt-10 mb-4">Oxirgi Yuklangan Rasmlar</h3>
                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                      {selectedUser.plan
                                         .flatMap(d => d.meals)
                                         .filter(m => m.proofImage)
-                                        .slice(-4) // Show last 4
+                                        .slice(-4)
                                         .map((meal, idx) => (
                                          <div key={idx} className="bg-[#1E1E1E] p-2 rounded-xl border border-gray-800">
                                              <div className="aspect-square rounded-lg overflow-hidden mb-2">
@@ -490,7 +697,6 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                 {isEditingTemplate && currentTemplate && (
                     <div className="fixed inset-0 bg-[#121212] z-[100] flex flex-col">
                         
-                        {/* Header */}
                         <div className="bg-[#1E1E1E] border-b border-gray-800 p-4 flex justify-between items-center">
                             <div className="flex items-center gap-4">
                                 <button onClick={() => setIsEditingTemplate(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X /></button>
@@ -505,7 +711,6 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                         </div>
 
                         <div className="flex flex-1 overflow-hidden">
-                            {/* Day Selector Sidebar */}
                             <div className="w-24 md:w-64 bg-[#1E1E1E] border-r border-gray-800 flex flex-col overflow-y-auto">
                                 <div className="p-4 font-bold text-gray-400 uppercase text-xs tracking-wider">Kunlar</div>
                                 {currentTemplate.days.map((day, index) => (
@@ -516,7 +721,6 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                                     >
                                         <span className="hidden md:inline">{day.day}-kun</span>
                                         <span className="md:hidden text-center block w-full">{day.day}</span>
-                                        {/* Indicators */}
                                         <div className="flex gap-1 mt-1">
                                             {day.meals.length > 0 && <div className="w-1.5 h-1.5 rounded-full bg-secondary"></div>}
                                             {day.exercises.length > 0 && <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>}
@@ -525,14 +729,12 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                                 ))}
                             </div>
 
-                            {/* Main Editor Area */}
                             <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-black">
                                 <div className="max-w-4xl mx-auto space-y-8">
                                     <div className="flex items-center justify-between">
                                         <h2 className="text-3xl font-bold text-white">{selectedDayIndex + 1}-kun Rejasi</h2>
                                     </div>
 
-                                    {/* Daily Intro Video Input */}
                                     <Card>
                                         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Send className="text-blue-500" /> Kunlik Video Xabar (Telegram)</h3>
                                         <div className="flex gap-4">
@@ -545,7 +747,6 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                                         </div>
                                     </Card>
 
-                                    {/* Meals Section */}
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-xl font-bold text-secondary flex items-center gap-2"><Utensils /> Ovqatlanish</h3>
@@ -629,7 +830,6 @@ export const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                                         ))}
                                     </div>
 
-                                    {/* Exercises Section */}
                                     <div className="space-y-4 pt-4 border-t border-gray-800">
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-xl font-bold text-primary flex items-center gap-2"><Dumbbell /> Mashg'ulotlar</h3>
