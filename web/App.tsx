@@ -4,7 +4,7 @@ import { UserApp } from './components/UserApp';
 import { AdminPanel } from './components/AdminPanel';
 import { Auth } from './components/Auth';
 import { Button } from './components/UI';
-import { UserRole, User } from './types';
+import { UserRole, User, Application } from './types';
 import { MOCK_USER } from './constants';
 import { LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +16,7 @@ const App = () => {
   const [allUsers, setAllUsers] = useState<User[]>([
     { ...MOCK_USER, role: UserRole.USER, isBlocked: false }
   ]);
+  const [applications, setApplications] = useState<Application[]>([]);
 
   const handleLogin = (role: UserRole, user?: User) => {
     setUserRole(role);
@@ -28,6 +29,16 @@ const App = () => {
     setUserRole(UserRole.GUEST);
     setCurrentUser(null);
     setCurrentView('landing');
+  };
+
+  const handleApplicationSubmit = (formData: { firstName: string; lastName: string; phone: string; telegram: string; city: string; weight: string; height: string; age: string; plan: string; goal: string }) => {
+    const newApp: Application = {
+      id: `app-${Date.now()}`,
+      ...formData,
+      status: 'new',
+      submittedAt: new Date().toISOString(),
+    };
+    setApplications(prev => [newApp, ...prev]);
   };
 
   return (
@@ -57,7 +68,7 @@ const App = () => {
             <About />
             <Gallery />
             <Pricing />
-            <ApplicationForm />
+            <ApplicationForm onApplicationSubmit={handleApplicationSubmit} />
             
             <footer className="bg-black py-8 border-t border-gray-900 text-center">
               <div className="container mx-auto">
@@ -91,6 +102,8 @@ const App = () => {
                 isCreator={userRole === UserRole.CREATOR}
                 allUsers={allUsers}
                 onUsersChange={setAllUsers}
+                applications={applications}
+                onApplicationsChange={setApplications}
               />
             </motion.div>
         )}

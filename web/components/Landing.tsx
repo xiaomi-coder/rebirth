@@ -277,7 +277,7 @@ type FormData = {
   goal: string;
 };
 
-export const ApplicationForm = () => {
+export const ApplicationForm = ({ onApplicationSubmit }: { onApplicationSubmit?: (data: FormData) => void }) => {
   const [submitted, setSubmitted] = React.useState(false);
   const [formData, setFormData] = React.useState<FormData | null>(null);
 
@@ -299,6 +299,7 @@ export const ApplicationForm = () => {
     };
     setFormData(data);
     setSubmitted(true);
+    if (onApplicationSubmit) onApplicationSubmit(data);
   };
 
   const openTelegramToAdmin = () => {

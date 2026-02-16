@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Users, Video, Activity, LogOut, Plus, Calendar, ChevronRight, Save, Trash2, Eye, X, Dumbbell, Utensils, Clock, Image as ImageIcon, Film, Send, Link2, Shield, ShieldOff, Ban, CheckCircle, Crown } from 'lucide-react';
+import { Users, Video, Activity, LogOut, Plus, Calendar, ChevronRight, Save, Trash2, Eye, X, Dumbbell, Utensils, Clock, Image as ImageIcon, Film, Send, Link2, Shield, ShieldOff, Ban, CheckCircle, Crown, Inbox, MessageCircle, Phone, MapPin, Target, FileText } from 'lucide-react';
 import { Button, Card } from './UI';
-import { User, PlanTemplate, DailyPlan, Task, UserRole } from '../types';
+import { User, PlanTemplate, DailyPlan, Task, UserRole, Application } from '../types';
 import { MOCK_TEMPLATES, MOCK_USER } from '../constants';
 
 interface AdminPanelProps {
@@ -11,10 +11,12 @@ interface AdminPanelProps {
     isCreator?: boolean;
     allUsers?: User[];
     onUsersChange?: (users: User[]) => void;
+    applications?: Application[];
+    onApplicationsChange?: (apps: Application[]) => void;
 }
 
-export const AdminPanel = ({ onLogout, isCreator = false, allUsers, onUsersChange }: AdminPanelProps) => {
-    const [activeTab, setActiveTab] = useState<'users' | 'analytics' | 'content'>('users');
+export const AdminPanel = ({ onLogout, isCreator = false, allUsers, onUsersChange, applications: appsProp, onApplicationsChange }: AdminPanelProps) => {
+    const [activeTab, setActiveTab] = useState<'applications' | 'users' | 'analytics' | 'content'>('applications');
     const [users, setUsersLocal] = useState<User[]>(allUsers || [MOCK_USER]);
     const [templates, setTemplates] = useState<PlanTemplate[]>(MOCK_TEMPLATES);
     
@@ -23,6 +25,16 @@ export const AdminPanel = ({ onLogout, isCreator = false, allUsers, onUsersChang
         setUsersLocal(resolved);
         if (onUsersChange) onUsersChange(resolved);
     };
+
+    // Applications state
+    const [apps, setAppsLocal] = useState<Application[]>(appsProp || []);
+    const setApps = (newApps: Application[] | ((prev: Application[]) => Application[])) => {
+        const resolved = typeof newApps === 'function' ? newApps(apps) : newApps;
+        setAppsLocal(resolved);
+        if (onApplicationsChange) onApplicationsChange(resolved);
+    };
+    const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+    const [appFilter, setAppFilter] = useState<'all' | 'new' | 'contacted' | 'accepted' | 'rejected'>('all');
 
     // UI States
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -109,6 +121,18 @@ export const AdminPanel = ({ onLogout, isCreator = false, allUsers, onUsersChang
         setUsers(users.filter(u => u.id !== userId));
     };
 
+    const handleAppStatusChange = (appId: string, status: Application['status']) => {
+        setApps(apps.map(a => a.id === appId ? { ...a, status } : a));
+        if (selectedApp?.id === appId) setSelectedApp({ ...selectedApp, status });
+    };
+
+    const handleAppNotes = (appId: string, notes: string) => {
+        setApps(apps.map(a => a.id === appId ? { ...a, notes } : a));
+    };
+
+    const filteredApps = appFilter === 'all' ? apps : apps.filter(a => a.status === appFilter);
+    const newAppsCount = apps.filter(a => a.status === 'new').length;
+
     const initNewTemplate = () => {
         const days: DailyPlan[] = Array.from({ length: 30 }, (_, i) => ({
             day: i + 1,
@@ -194,6 +218,7 @@ export const AdminPanel = ({ onLogout, isCreator = false, allUsers, onUsersChang
                     )}
                 </div>
                 <nav className="flex-1 space-y-2">
+                    <SidebarItem icon={<Inbox />} label="Arizalar" active={activeTab === 'applications'} onClick={() => setActiveTab('applications')} badge={newAppsCount} />
                     <SidebarItem icon={<Users />} label="Foydalanuvchilar" active={activeTab === 'users'} onClick={() => setActiveTab('users')} />
                     <SidebarItem icon={<Video />} label="Kontent & Rejalar" active={activeTab === 'content'} onClick={() => setActiveTab('content')} />
                     <SidebarItem icon={<Activity />} label="Statistika" active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
@@ -207,6 +232,106 @@ export const AdminPanel = ({ onLogout, isCreator = false, allUsers, onUsersChang
             {/* Content Area */}
             <main className="flex-1 p-4 md:p-8 overflow-y-auto ml-20 md:ml-0 bg-black">
                 
+                {/* --- APPLICATIONS TAB --- */}
+                {activeTab === 'applications' && (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center flex-wrap gap-4">
+                            <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+                                <Inbox className="text-primary" /> Arizalar
+                                {newAppsCount > 0 && (
+                                    <span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full animate-pulse">{newAppsCount} yangi</span>
+                                )}
+                            </h2>
+                        </div>
+
+                        {/* Filter tabs */}
+                        <div className="flex gap-2 flex-wrap">
+                            {[
+                                { key: 'all' as const, label: 'Barchasi', count: apps.length },
+                                { key: 'new' as const, label: 'Yangi', count: apps.filter(a => a.status === 'new').length },
+                                { key: 'contacted' as const, label: "Bog'lanildi", count: apps.filter(a => a.status === 'contacted').length },
+                                { key: 'accepted' as const, label: 'Qabul qilindi', count: apps.filter(a => a.status === 'accepted').length },
+                                { key: 'rejected' as const, label: 'Rad etildi', count: apps.filter(a => a.status === 'rejected').length },
+                            ].map(f => (
+                                <button
+                                    key={f.key}
+                                    onClick={() => setAppFilter(f.key)}
+                                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                                        appFilter === f.key
+                                            ? 'bg-primary text-white'
+                                            : 'bg-[#2A2A2A] text-gray-400 hover:bg-[#333]'
+                                    }`}
+                                >
+                                    {f.label} {f.count > 0 && <span className="ml-1 text-xs opacity-70">({f.count})</span>}
+                                </button>
+                            ))}
+                        </div>
+
+                        {filteredApps.length === 0 ? (
+                            <div className="text-center py-20 text-gray-500">
+                                <Inbox className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                                <h3 className="text-xl font-bold">Hozircha arizalar yo'q</h3>
+                                <p className="mt-2">Landing sahifadan anketa to'ldirilganda bu yerda ko'rinadi</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {filteredApps.map(app => {
+                                    const statusColors: Record<string, string> = {
+                                        new: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+                                        contacted: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+                                        accepted: 'bg-green-500/20 text-green-400 border-green-500/30',
+                                        rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
+                                    };
+                                    const statusLabels: Record<string, string> = {
+                                        new: 'Yangi',
+                                        contacted: "Bog'lanildi",
+                                        accepted: 'Qabul qilindi',
+                                        rejected: 'Rad etildi',
+                                    };
+                                    return (
+                                        <motion.div
+                                            key={app.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className={`bg-[#1E1E1E] rounded-2xl border border-gray-800 p-5 hover:border-gray-600 transition-all cursor-pointer ${app.status === 'new' ? 'ring-1 ring-blue-500/30' : ''}`}
+                                            onClick={() => setSelectedApp(app)}
+                                        >
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${app.status === 'new' ? 'bg-blue-500/20 text-blue-400' : 'bg-primary/20 text-primary'}`}>
+                                                        {app.firstName.charAt(0)}{app.lastName.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-white text-lg">{app.firstName} {app.lastName}</div>
+                                                        <div className="text-sm text-gray-400 flex items-center gap-3 mt-1">
+                                                            <span className="flex items-center gap-1"><Phone size={12} /> {app.phone}</span>
+                                                            {app.telegram && <span className="flex items-center gap-1"><MessageCircle size={12} /> {app.telegram}</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${statusColors[app.status]}`}>
+                                                        {statusLabels[app.status]}
+                                                    </span>
+                                                    <div className="text-xs text-gray-500 mt-2">
+                                                        {new Date(app.submittedAt).toLocaleDateString('uz-UZ')} {new Date(app.submittedAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <span className="bg-gray-800 px-2 py-1 rounded text-xs text-gray-300 flex items-center gap-1"><Target size={10} /> {app.goal}</span>
+                                                <span className="bg-gray-800 px-2 py-1 rounded text-xs text-gray-300">{app.plan}</span>
+                                                <span className="bg-gray-800 px-2 py-1 rounded text-xs text-gray-300 flex items-center gap-1"><MapPin size={10} /> {app.city}</span>
+                                                <span className="bg-gray-800 px-2 py-1 rounded text-xs text-gray-300">{app.weight}kg / {app.height}sm / {app.age} yosh</span>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* --- USERS TAB --- */}
                 {activeTab === 'users' && (
                     <div className="space-y-6">
@@ -385,6 +510,129 @@ export const AdminPanel = ({ onLogout, isCreator = false, allUsers, onUsersChang
                     </div>
                 )}
             </main>
+
+            {/* --- MODAL: APPLICATION DETAIL --- */}
+            <AnimatePresence>
+                {selectedApp && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-[#1E1E1E] rounded-3xl w-full max-w-lg border border-gray-700 p-6 max-h-[90vh] overflow-y-auto"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <FileText className="text-primary" /> Ariza tafsilotlari
+                                </h3>
+                                <button onClick={() => setSelectedApp(null)}><X className="text-gray-400" /></button>
+                            </div>
+
+                            {/* Person info */}
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-2xl font-bold text-primary">
+                                    {selectedApp.firstName.charAt(0)}{selectedApp.lastName.charAt(0)}
+                                </div>
+                                <div>
+                                    <h4 className="text-xl font-bold text-white">{selectedApp.firstName} {selectedApp.lastName}</h4>
+                                    <p className="text-sm text-gray-400">
+                                        {new Date(selectedApp.submittedAt).toLocaleDateString('uz-UZ')} — {new Date(selectedApp.submittedAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Data grid */}
+                            <div className="grid grid-cols-2 gap-3 mb-6">
+                                <div className="bg-[#2A2A2A] p-3 rounded-xl">
+                                    <div className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Phone size={10} /> Telefon</div>
+                                    <div className="text-white font-bold">{selectedApp.phone}</div>
+                                </div>
+                                <div className="bg-[#2A2A2A] p-3 rounded-xl">
+                                    <div className="text-xs text-gray-500 mb-1 flex items-center gap-1"><MessageCircle size={10} /> Telegram</div>
+                                    <div className="text-white font-bold">{selectedApp.telegram || '—'}</div>
+                                </div>
+                                <div className="bg-[#2A2A2A] p-3 rounded-xl">
+                                    <div className="text-xs text-gray-500 mb-1 flex items-center gap-1"><MapPin size={10} /> Shahar</div>
+                                    <div className="text-white font-bold">{selectedApp.city}</div>
+                                </div>
+                                <div className="bg-[#2A2A2A] p-3 rounded-xl">
+                                    <div className="text-xs text-gray-500 mb-1">Jismoniy</div>
+                                    <div className="text-white font-bold text-sm">{selectedApp.weight}kg / {selectedApp.height}sm / {selectedApp.age} yosh</div>
+                                </div>
+                                <div className="bg-[#2A2A2A] p-3 rounded-xl">
+                                    <div className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Target size={10} /> Maqsad</div>
+                                    <div className="text-white font-bold">{selectedApp.goal}</div>
+                                </div>
+                                <div className="bg-[#2A2A2A] p-3 rounded-xl">
+                                    <div className="text-xs text-gray-500 mb-1">Tarif</div>
+                                    <div className="text-primary font-bold">{selectedApp.plan}</div>
+                                </div>
+                            </div>
+
+                            {/* Quick actions */}
+                            <div className="flex gap-2 mb-4">
+                                {selectedApp.telegram && (
+                                    <button
+                                        onClick={() => window.open(`https://t.me/${selectedApp.telegram?.replace('@', '')}`, '_blank')}
+                                        className="flex-1 py-2.5 bg-[#0088cc] hover:bg-[#0077b5] text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors"
+                                    >
+                                        <MessageCircle size={16} /> Telegram
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => window.open(`tel:${selectedApp.phone}`, '_self')}
+                                    className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors"
+                                >
+                                    <Phone size={16} /> Qo'ng'iroq
+                                </button>
+                            </div>
+
+                            {/* Status change */}
+                            <div className="mb-4">
+                                <label className="text-xs text-gray-500 block mb-2">Ariza holati</label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {[
+                                        { key: 'new' as const, label: 'Yangi', color: 'bg-blue-500' },
+                                        { key: 'contacted' as const, label: "Bog'lanildi", color: 'bg-yellow-500' },
+                                        { key: 'accepted' as const, label: 'Qabul', color: 'bg-green-500' },
+                                        { key: 'rejected' as const, label: 'Rad', color: 'bg-red-500' },
+                                    ].map(s => (
+                                        <button
+                                            key={s.key}
+                                            onClick={() => handleAppStatusChange(selectedApp.id, s.key)}
+                                            className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                                selectedApp.status === s.key
+                                                    ? `${s.color} text-white`
+                                                    : 'bg-[#2A2A2A] text-gray-400 hover:bg-[#333]'
+                                            }`}
+                                        >
+                                            {s.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Notes */}
+                            <div className="mb-4">
+                                <label className="text-xs text-gray-500 block mb-2">Izoh / Eslatma</label>
+                                <textarea
+                                    className="w-full bg-[#2A2A2A] border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:border-primary focus:outline-none h-20"
+                                    placeholder="Eslatma yozing..."
+                                    value={selectedApp.notes || ''}
+                                    onChange={(e) => {
+                                        handleAppNotes(selectedApp.id, e.target.value);
+                                        setSelectedApp({ ...selectedApp, notes: e.target.value });
+                                    }}
+                                />
+                            </div>
+
+                            <Button onClick={() => setSelectedApp(null)} variant="outline" className="w-full">
+                                Yopish
+                            </Button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* --- MODAL: ROL O'ZGARTIRISH (Creator only) --- */}
             <AnimatePresence>
@@ -915,12 +1163,17 @@ export const AdminPanel = ({ onLogout, isCreator = false, allUsers, onUsersChang
     );
 };
 
-const SidebarItem = ({ icon, label, active, onClick }: any) => (
+const SidebarItem = ({ icon, label, active, onClick, badge }: any) => (
     <button 
         onClick={onClick}
-        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:bg-[#252525] hover:text-white'}`}
+        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:bg-[#252525] hover:text-white'}`}
     >
         {React.cloneElement(icon, { size: 20 })}
         <span className="font-medium hidden md:inline">{label}</span>
+        {badge > 0 && (
+            <span className="absolute top-1 right-1 md:static bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                {badge}
+            </span>
+        )}
     </button>
 );

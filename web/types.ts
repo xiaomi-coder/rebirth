@@ -180,3 +180,20 @@ export interface Purchase {
   status: 'pending' | 'completed' | 'failed';
   purchasedAt: string;
 }
+
+export interface Application {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  telegram: string;
+  city: string;
+  weight: string;
+  height: string;
+  age: string;
+  plan: string;
+  goal: string;
+  status: 'new' | 'contacted' | 'accepted' | 'rejected';
+  submittedAt: string;
+  notes?: string;
+}
