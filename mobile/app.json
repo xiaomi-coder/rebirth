@@ -24,6 +24,13 @@
       "package": "uz.qayta.tugilish",
       "edgeToEdgeEnabled": true
     },
-    "web": { "favicon": "./assets/favicon.png" }
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1350965b-b4ed-409e-bb11-d4257538180e"
+      }
+    }
   }
 }
